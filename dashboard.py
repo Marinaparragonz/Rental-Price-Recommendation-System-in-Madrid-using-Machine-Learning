@@ -1,3 +1,10 @@
+# =============================================================================
+# MADRID HOUSING DASHBOARD - MAIN APPLICATION
+# =============================================================================
+# This dashboard provides AI-powered property price predictions for Madrid
+# using a Random Forest machine learning model with interactive map selection
+
+# --- IMPORT LIBRARIES ---
 import streamlit as st 
 import geopandas as gpd
 from streamlit_folium import st_folium
@@ -7,6 +14,7 @@ import numpy as np
 import os
 import pickle
 
+# Optional imports with error handling for better compatibility
 try:
     from shapely.geometry import Point
     SHAPELY_AVAILABLE = True
@@ -22,25 +30,30 @@ try:
 except ImportError:
     SKLEARN_AVAILABLE = False
 
-# --- Funciones para el modelo Random Forest ---
+# =============================================================================
+# MACHINE LEARNING MODEL FUNCTIONS
+# =============================================================================
 
 @st.cache_resource
 def load_trained_model():
-    """Carga el modelo Random Forest entrenado y sus componentes asociados"""
+    """
+    Loads the trained Random Forest model and its associated components
+    Returns: model, district_mapping, model_features, model_info
+    """
     try:
         if SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl'):
-            # Cargar modelo
+            # Load the trained model
             model = joblib.load('random_forest_model.pkl')
             
-            # Cargar mapping de distrito nombre -> DISTRICT_CODE
+            # Load district name to DISTRICT_CODE mapping
             with open('district_mapping.pkl', 'rb') as f:
                 district_mapping = pickle.load(f)
             
-            # Cargar features que usa el modelo
+            # Load model features list
             with open('model_features.pkl', 'rb') as f:
                 model_features = pickle.load(f)
                 
-            # Cargar información del modelo (opcional)
+            # Load model information (optional)
             with open('model_info.pkl', 'rb') as f:
                 model_info = pickle.load(f)
             
@@ -51,11 +64,13 @@ def load_trained_model():
         st.error(f"Error loading model: {e}")
         return None, None, None, None
 
-
 def predict_with_model(model, district_mapping, model_features, model_info, input_params):
-    """Realiza predicción usando el modelo Random Forest"""
+    """
+    Makes prediction using the Random Forest model
+    Maps user inputs to model features and returns estimated price
+    """
     try:
-        # Mapear amenidades a las features booleanas del modelo
+        # Map amenities to boolean features in the model
         amenity_mapping = {
             '🌿 Terrace': 'HASTERRACE',
             '🏗️ Lift': 'HASLIFT', 
@@ -68,7 +83,7 @@ def predict_with_model(model, district_mapping, model_features, model_info, inpu
             '🏊 Swimming Pool': 'HASSWIMMINGPOOL'
         }
         
-        # Crear diccionario con valores por defecto
+        # Create input dictionary with default values
         model_input = {
             'CONSTRUCTEDAREA': input_params['area'],
             'ROOMNUMBER': input_params['rooms'],
@@ -82,52 +97,67 @@ def predict_with_model(model, district_mapping, model_features, model_info, inpu
             'HASWARDROBE': 0,
             'HASDOORMAN': 0,
             'HASSWIMMINGPOOL': 0,
-            'DISTANCE_TO_CITY_CENTER': 5.0,  # Valor promedio en km
-            'DISTANCE_TO_METRO': 0.5,  # Valor promedio en km
-            'DISTANCE_TO_CASTELLANA': 3.0,  # Valor promedio en km
-            'CADCONSTRUCTIONYEAR': 1980,  # Año promedio
-            'CADMAXBUILDINGFLOOR': 5,  # Plantas promedio
-            'CADDWELLINGCOUNT': 20,  # Viviendas promedio por edificio
-            'BUILTTYPEID_2': 1,  # Tipo de edificio más común
+            'DISTANCE_TO_CITY_CENTER': 5.0,  # Average distance in km
+            'DISTANCE_TO_METRO': 0.5,  # Average distance in km
+            'DISTANCE_TO_CASTELLANA': 3.0,  # Average distance in km
+            'CADCONSTRUCTIONYEAR': 1980,  # Average construction year
+            'CADMAXBUILDINGFLOOR': 5,  # Average building floors
+            'CADDWELLINGCOUNT': 20,  # Average dwellings per building
+            'BUILTTYPEID_2': 1,  # Most common building type
         }
         
-        # Mapear distrito seleccionado a DISTRICT_CODE
+        # Map selected district to DISTRICT_CODE
         selected_district = input_params.get('district', 'Centro')
         if selected_district in district_mapping:
             model_input['DISTRICT_CODE'] = district_mapping[selected_district]
         else:
-            # Valor por defecto si no encontramos el distrito
-            model_input['DISTRICT_CODE'] = 1  # Código del Centro por defecto
-            st.warning(f"Distrito '{selected_district}' no encontrado en el mapping. Usando Centro como valor por defecto.")
+            # Default value if district not found
+            model_input['DISTRICT_CODE'] = 1  # Centro district code as default
+            st.warning(f"District '{selected_district}' not found in mapping. Using Centro as default.")
         
-        # Activar amenidades seleccionadas
+        # Activate selected amenities
         for amenity in input_params.get('amenities', []):
             if amenity in amenity_mapping:
                 model_input[amenity_mapping[amenity]] = 1
         
-        # Crear DataFrame con la entrada
+        # Create DataFrame with input data
         df_input = pd.DataFrame([model_input])
         
-        # Asegurar que las columnas estén en el orden correcto según model_features
+        # Ensure columns are in correct order according to model_features
         df_input = df_input.reindex(columns=model_features, fill_value=0)
         
-        # Realizar predicción
+        # Make prediction
         prediction = model.predict(df_input)[0]
         
-        return max(50000, int(prediction))  # Mínimo de 50k€
+        return max(50000, int(prediction))  # Minimum of 50k€
         
     except Exception as e:
         st.error(f"Error in prediction: {e}")
         return None
 
-# Configuración general
+# =============================================================================
+# STREAMLIT PAGE CONFIGURATION
+# =============================================================================
+
 st.set_page_config(page_title="Madrid Housing Dashboard", layout="wide", page_icon="🏠")
 
-# --- Estilos personalizados mejorados ---
+# =============================================================================
+# CUSTOM CSS STYLES
+# =============================================================================
+# Comprehensive styling for the dashboard including:
+# - Gradient backgrounds and glass morphism effects
+# - Sidebar styling with enhanced visibility
+# - Interactive button and form element styling
+# - Map container and tooltip customization
+# - Metric cards and information displays
+# - Responsive design elements
+
 st.markdown("""
 <style>
+    /* Import Google Fonts */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
+    /* Main application background with gradient */
     html, body, .stApp {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         font-family: 'Inter', sans-serif;
@@ -136,6 +166,7 @@ st.markdown("""
         padding: 0;
     }
 
+    /* Main content container with glass morphism effect */
     .block-container {
         padding: 2rem 2rem 3rem 2rem;
         background: rgba(255, 255, 255, 0.05);
@@ -145,6 +176,7 @@ st.markdown("""
         box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }
 
+    /* Sidebar styling with enhanced transparency and blur effects */
     section[data-testid="stSidebar"] {
         background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
         backdrop-filter: blur(20px);
@@ -156,6 +188,7 @@ st.markdown("""
         box-shadow: 4px 0 20px rgba(102, 126, 234, 0.15);
     }
 
+    /* Sidebar text styling for better readability */
     section[data-testid="stSidebar"] .stMarkdown {
         color: #2c3e50;
     }
@@ -174,6 +207,7 @@ st.markdown("""
         color: #34495e !important;
     }
 
+    /* Main heading styling with text shadow effects */
     h1 {
         color: white;
         font-size: 3.5rem;
@@ -184,6 +218,7 @@ st.markdown("""
         filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.3));
     }
 
+    /* Secondary headings styling */
     h2, .stSubheader {
         color: white;
         font-size: 1.8rem;
@@ -199,6 +234,7 @@ st.markdown("""
         margin-bottom: 1rem;
     }
 
+    /* Interactive button styling with hover effects */
     div.stButton > button {
         background: linear-gradient(45deg, #667eea, #764ba2);
         color: white;
@@ -218,6 +254,7 @@ st.markdown("""
         background: linear-gradient(45deg, #764ba2, #667eea);
     }
 
+    /* Form elements styling (sliders, multiselect) */
     .stSlider > div {
         background: rgba(255, 255, 255, 0.6);
         backdrop-filter: blur(10px);
@@ -240,7 +277,7 @@ st.markdown("""
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     
-    /* Asegurar que los labels de sliders y multiselect tengan el mismo estilo - TAMAÑO GRANDE */
+    /* Enhanced label styling for form elements - large size for better visibility */
     section[data-testid="stSidebar"] .stSlider label,
     section[data-testid="stSidebar"] .stMultiSelect label {
         color: #2c3e50 !important;
@@ -254,7 +291,7 @@ st.markdown("""
         text-transform: capitalize !important;
     }
     
-    /* Estilos específicos para elementos del sidebar */
+    /* Additional form element text styling for contrast */
     section[data-testid="stSidebar"] .stSlider > div > div > div > div {
         color: #1a202c !important;
         font-weight: 600 !important;
@@ -265,14 +302,14 @@ st.markdown("""
         font-weight: 600 !important;
     }
     
-    /* Mejorar el contraste de los valores de los sliders */
+    /* Slider value display enhancement */
     section[data-testid="stSidebar"] .stSlider div[data-testid="stSliderThumbValue"] {
         color: #1a202c !important;
         font-weight: 700 !important;
         font-size: 1rem !important;
     }
     
-    /* Mejorar el contraste del texto en general del sidebar */
+    /* Additional text contrast improvements */
     section[data-testid="stSidebar"] .stSlider > div > div {
         color: #1a202c !important;
     }
@@ -281,7 +318,7 @@ st.markdown("""
         color: #1a202c !important;
     }
     
-    /* Mejorar también las etiquetas de otros elementos del sidebar - TAMAÑO GRANDE */
+    /* Consistent label styling for all form elements */
     section[data-testid="stSidebar"] .stSelectbox label {
         color: #2c3e50 !important;
         font-weight: 900 !important;
@@ -306,7 +343,7 @@ st.markdown("""
         text-transform: capitalize !important;
     }
     
-    /* Asegurar que todos los labels tengan buen tamaño - VERSIÓN MUY GRANDE */
+    /* Universal label styling override for consistency */
     section[data-testid="stSidebar"] label {
         color: #2c3e50 !important;
         font-weight: 900 !important;
@@ -319,7 +356,7 @@ st.markdown("""
         text-transform: capitalize !important;
     }
     
-    /* Mejorar la apariencia de los controles de entrada */
+    /* Input field styling improvements */
     section[data-testid="stSidebar"] .stSelectbox div[data-baseweb="select"] {
         background-color: rgba(255, 255, 255, 0.95) !important;
         border: 2px solid #e0e0e0 !important;
@@ -340,14 +377,14 @@ st.markdown("""
         font-size: 1rem !important;
     }
     
-    /* Asegurar que el texto de los valores seleccionados sea visible */
+    /* Selected value text visibility */
     section[data-testid="stSidebar"] .stSelectbox span,
     section[data-testid="stSidebar"] .stMultiSelect span {
         color: #2c3e50 !important;
         font-weight: 600 !important;
     }
     
-    /* FORZAR TAMAÑOS DE LABELS - REGLAS MÁS ESPECÍFICAS */
+    /* Specific override for label sizing */
     section[data-testid="stSidebar"] div[data-testid="stMultiSelect"] > label,
     section[data-testid="stSidebar"] div[data-testid="stSlider"] > label,
     section[data-testid="stSidebar"] div[data-testid="stSelectbox"] > label {
@@ -362,14 +399,14 @@ st.markdown("""
         text-transform: capitalize !important;
     }
     
-    /* Sobrescribir cualquier inline style de Streamlit */
+    /* Force override any inline styles from Streamlit */
     section[data-testid="stSidebar"] label[style] {
         font-size: 1.5rem !important;
         font-weight: 900 !important;
         color: #2c3e50 !important;
     }
     
-    /* Botón del sidebar mejorado */
+    /* Enhanced sidebar button styling */
     section[data-testid="stSidebar"] div.stButton > button {
         background: linear-gradient(45deg, #667eea, #764ba2) !important;
         color: white !important;
@@ -391,7 +428,7 @@ st.markdown("""
         background: linear-gradient(45deg, #764ba2, #667eea) !important;
     }
     
-    /* Eliminar cualquier estilo rojo del botón primary */
+    /* Remove default red styling for primary buttons */
     section[data-testid="stSidebar"] div.stButton > button[kind="primary"] {
         background: linear-gradient(45deg, #667eea, #764ba2) !important;
         border-color: transparent !important;
@@ -402,6 +439,7 @@ st.markdown("""
         border-color: transparent !important;
     }
 
+    /* Expandable sections styling */
     .stExpander {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(15px);
@@ -414,7 +452,7 @@ st.markdown("""
         background: transparent;
     }
     
-    /* Estilos para el título del expander */
+    /* Expander title styling */
     .stExpander summary {
         color: white !important;
         font-weight: 600 !important;
@@ -429,11 +467,12 @@ st.markdown("""
         color: white !important;
     }
 
+    /* General markdown text styling */
     .stMarkdown {
         color: white;
     }
 
-    /* Estilos para métricas */
+    /* Metric cards styling with hover effects */
     .metric-container {
         background: rgba(255, 255, 255, 0.2);
         backdrop-filter: blur(15px);
@@ -453,7 +492,7 @@ st.markdown("""
         background: rgba(255, 255, 255, 0.25);
     }
 
-    /* Estilos para el mapa - Eliminar elementos visuales no deseados */
+    /* Map popup removal - hide unwanted visual elements */
     .folium-map .leaflet-popup-pane {
         display: none !important;
     }
@@ -474,17 +513,18 @@ st.markdown("""
         display: none !important;
     }
     
-    /* Ocultar cualquier overlay que pueda aparecer al hacer clic */
+    /* Allow only tooltip overlays */
     .folium-map .leaflet-overlay-pane .leaflet-clickable {
         pointer-events: auto;
     }
     
-    /* Asegurar que solo se muestre el tooltip */
+    /* Ensure tooltips are visible */
     .folium-map .leaflet-tooltip {
         display: block !important;
         pointer-events: none !important;
     }
 
+    /* Metric value and label styling */
     .metric-value {
         font-size: 2.5rem;
         font-weight: 700;
@@ -500,7 +540,7 @@ st.markdown("""
         text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     }
 
-    /* Animaciones suaves */
+    /* Smooth animations for interactive elements */
     .stSlider, .stMultiSelect, .stButton, .stExpander {
         transition: all 0.3s ease;
     }
@@ -509,7 +549,7 @@ st.markdown("""
         transform: translateY(-1px);
     }
     
-    /* Estilo para el mapa */
+    /* Map container styling */
     .map-container {
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(15px);
@@ -522,7 +562,7 @@ st.markdown("""
         overflow: hidden;
     }
     
-    /* Ajustar el mapa para que ocupe todo el espacio */
+    /* Map iframe sizing */
     .stApp > div > div > div > div > div:has(iframe) {
         width: 100% !important;
         height: 100% !important;
@@ -534,7 +574,7 @@ st.markdown("""
         border-radius: 15px;
     }
     
-    /* Tarjetas de información */
+    /* Information cards styling */
     .info-card {
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
         backdrop-filter: blur(15px);
@@ -552,6 +592,7 @@ st.markdown("""
         border: 1px solid rgba(102, 126, 234, 0.4);
     }
     
+    /* Feature icon styling */
     .feature-icon {
         font-size: 2.5rem;
         margin-bottom: 15px;
@@ -559,7 +600,7 @@ st.markdown("""
         text-align: center;
     }
     
-    /* Gradientes para los iconos */
+    /* Gradient text effects */
     .price-gradient {
         background: linear-gradient(45deg, #667eea, #764ba2);
         -webkit-background-clip: text;
@@ -567,12 +608,12 @@ st.markdown("""
         background-clip: text;
     }
     
-    /* Sidebar styling */
+    /* Sidebar transparent background */
     .stSidebar > div:first-child {
         background: transparent;
     }
     
-    /* Mejorar contraste en inputs del sidebar */
+    /* Sidebar slider input improvements */
     section[data-testid="stSidebar"] .stSlider > div > div > div > div > div {
         background-color: transparent !important;
         color: #2c3e50 !important;
@@ -582,13 +623,14 @@ st.markdown("""
         background-color: rgba(44, 62, 80, 0.1) !important;
         border-radius: 8px !important;
     }
-    /* Estilos para el multiselect del sidebar */
+    
+    /* Multiselect dropdown styling */
     section[data-testid="stSidebar"] .stMultiSelect > div > div > div > div {
         background-color: rgba(255, 255, 255, 0.9) !important;
         color: #2c3e50 !important;
     }
     
-    /* Estilos para los tags/chips seleccionados en multiselect */
+    /* Selected tags/chips styling in multiselect */
     section[data-testid="stSidebar"] .stMultiSelect div[data-baseweb="tag"] {
         background: linear-gradient(45deg, #667eea, #764ba2) !important;
         color: white !important;
@@ -604,7 +646,7 @@ st.markdown("""
         color: white !important;
     }
     
-    /* Botón X para eliminar el tag */
+    /* Remove tag button styling */
     section[data-testid="stSidebar"] .stMultiSelect div[data-baseweb="tag"] button {
         color: rgba(255, 255, 255, 0.8) !important;
         background: transparent !important;
@@ -619,6 +661,7 @@ st.markdown("""
         border-radius: 50% !important;
     }
     
+    /* Alert styling */
     section[data-testid="stSidebar"] .stAlert {
         background: rgba(40, 167, 69, 0.15) !important;
         border: 1px solid rgba(40, 167, 69, 0.3) !important;
@@ -628,7 +671,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- Título del Dashboard con subtítulo ---
+# =============================================================================
+# HEADER SECTION
+# =============================================================================
+# Main title and subtitle display with model status indicator
+
 col1, col2, col3 = st.columns([1, 2, 1])
 with col2:
     st.title("Madrid Housing Dashboard")
@@ -638,7 +685,7 @@ with col2:
     </div>
     """, unsafe_allow_html=True)
 
-# --- Verificar estado del modelo ---
+# Model status indicator - shows if AI model is ready or in formula mode
 model_status = "🤖 AI Model Ready" if (SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl')) else "📊 Formula Mode"
 model_color = "#28a745" if (SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl')) else "#ffc107"
 
@@ -650,7 +697,11 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# --- Filtros en barra lateral con mejor diseño ---
+# =============================================================================
+# SIDEBAR FILTERS SECTION
+# =============================================================================
+# User input controls for property specifications and amenities
+
 st.sidebar.markdown("""
 <div style='text-align: center; margin-bottom: 2rem; padding: 1rem 0; border-bottom: 2px solid rgba(102, 126, 234, 0.2);'>
     <h1 style='color: #2c3e50; font-size: 1.8rem; margin-bottom: 0.8rem; font-weight: 800; text-align: center; text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);'>Filter Properties</h1>
@@ -658,6 +709,7 @@ st.sidebar.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
+# Property specifications section header
 st.sidebar.markdown("""
 <div style='margin: 30px 0 20px 0; padding: 0 0 15px 0; border-bottom: 2px solid rgba(102, 126, 234, 0.4);'>
     <h3 style='color: #2c3e50; font-weight: 700; margin: 0; font-size: 1.15rem; display: flex; align-items: center; text-transform: capitalize;'>
@@ -666,6 +718,8 @@ st.sidebar.markdown("""
     </h3>
 </div>
 """, unsafe_allow_html=True)
+
+# Input sliders for property characteristics
 rooms = st.sidebar.slider("🛏️ Number of Rooms", min_value=1, max_value=7, value=3, help="Select the number of bedrooms")
 bathrooms = st.sidebar.slider("🚿 Number of Bathrooms", min_value=1, max_value=4, value=2, help="Select the number of bathrooms")
 area = st.sidebar.slider("📐 Constructed Area (m²)", min_value=30, max_value=300, value=80, help="Select the total area of the property")
@@ -852,7 +906,7 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Añadir JavaScript mejorado para eliminar cualquier popup o elemento visual no deseado
+# Enhanced JavaScript to aggressively remove unwanted map elements
 st.markdown("""
 <script>
 // Función para eliminar popups y elementos visuales no deseados de manera más agresiva
@@ -932,32 +986,36 @@ window.addEventListener('load', function() {
 </script>
 """, unsafe_allow_html=True)
 
-# --- Obtener el distrito seleccionado y actualizar si hay cambios ---
+# =============================================================================
+# MAP INTERACTION HANDLING
+# =============================================================================
+# Process map clicks and update selected district
+
 new_selected_district = None
 district_changed = False
 
-# Verificar diferentes formas de obtener el distrito seleccionado
+# Check different ways to get the selected district
 if map_data:
-    # Método 1: Usando last_object_clicked_tooltip
+    # Method 1: Using last_object_clicked_tooltip
     if map_data.get("last_object_clicked_tooltip"):
         tooltip_text = map_data["last_object_clicked_tooltip"]
-        # Remover el checkmark si existe
+        # Remove checkmark if exists
         new_district = tooltip_text.replace("✓ ", "") if tooltip_text.startswith("✓ ") else tooltip_text
         if new_district != st.session_state.get("last_selected_district"):
             new_selected_district = new_district
             district_changed = True
     
-    # Método 2: Usando coordenadas del clic para encontrar el distrito
+    # Method 2: Using click coordinates to find district
     elif map_data.get("last_object_clicked") and isinstance(map_data["last_object_clicked"], dict):
         clicked_coords = map_data["last_object_clicked"]
         if "lat" in clicked_coords and "lng" in clicked_coords and SHAPELY_AVAILABLE:
             lat = clicked_coords["lat"]
             lng = clicked_coords["lng"]
             
-            # Crear un punto con las coordenadas del clic
-            clicked_point = Point(lng, lat)  # Nota: shapely usa (lng, lat)
+            # Create point with click coordinates
+            clicked_point = Point(lng, lat)  # Note: shapely uses (lng, lat)
             
-            # Buscar en qué distrito está el punto
+            # Find which district contains the point
             for _, district_row in gdf_districts.iterrows():
                 try:
                     if district_row["geometry"].contains(clicked_point):
@@ -969,7 +1027,7 @@ if map_data:
                 except Exception:
                     continue
     
-    # Método 3: Otros métodos de fallback
+    # Method 3: Other fallback methods
     elif map_data.get("last_clicked") and map_data["last_clicked"].get("tooltip"):
         tooltip_text = map_data["last_clicked"]["tooltip"]
         new_district = tooltip_text.replace("✓ ", "") if tooltip_text.startswith("✓ ") else tooltip_text
@@ -986,18 +1044,22 @@ if map_data:
                 new_selected_district = new_district
                 district_changed = True
 
-# Actualizar el distrito seleccionado
+# Update selected district
 if new_selected_district:
     selected_district = new_selected_district
     st.session_state["last_selected_district"] = selected_district
 elif "last_selected_district" in st.session_state:
     selected_district = st.session_state["last_selected_district"]
     
-# Si el distrito cambió, forzar recarga para actualizar la interfaz y el mapa
+# If district changed, force reload to update interface and map
 if district_changed:
     st.rerun()
 
-# --- Sección de amenidades en sidebar ---
+# =============================================================================
+# AMENITIES SELECTION
+# =============================================================================
+# Multi-select dropdown for property amenities
+
 st.sidebar.markdown("""
 <div style='margin: 30px 0 20px 0; padding: 0 0 15px 0; border-bottom: 2px solid rgba(102, 126, 234, 0.4);'>
     <h3 style='color: #2c3e50; font-weight: 700; margin: 0; font-size: 1.6rem !important; display: flex; align-items: center; text-transform: capitalize;'>
@@ -1006,13 +1068,18 @@ st.sidebar.markdown("""
     </h3>
 </div>
 """, unsafe_allow_html=True)
+
 amenities_options = [
     "🏗️ Lift", "❄️ Air Conditioning", "🚗 Parking Space", "👔 Built-in Wardrobe",
     "📦 Storage Room", "🌿 Terrace", "🏊 Swimming Pool", "🛡️ Doorman", "🌺 Garden"
 ]
 selected_amenities = st.sidebar.multiselect("✨ Property Amenities", options=amenities_options, help="Select all desired amenities for your property")
 
-# --- Mostrar distrito seleccionado en sidebar (al final) ---
+# =============================================================================
+# SELECTED DISTRICT DISPLAY
+# =============================================================================
+# Show currently selected district in sidebar
+
 st.sidebar.markdown("""
 <div style='margin: 30px 0 20px 0; padding: 0 0 15px 0; border-bottom: 2px solid rgba(102, 126, 234, 0.4);'>
     <h3 style='color: #2c3e50; font-weight: 700; margin: 0; font-size: 1.15rem; display: flex; align-items: center; text-transform: capitalize;'>
@@ -1021,6 +1088,7 @@ st.sidebar.markdown("""
     </h3>
 </div>
 """, unsafe_allow_html=True)
+
 if selected_district:
     st.sidebar.markdown(f"""
     <div style='background: linear-gradient(45deg, #667eea, #764ba2); padding: 15px; border-radius: 12px; text-align: center; margin: 10px 0; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);'>
@@ -1036,13 +1104,17 @@ else:
     </div>
     """, unsafe_allow_html=True)
 
-# --- Botón de estimación ---
-st.sidebar.markdown("<br><br>", unsafe_allow_html=True)  # Espacio adicional antes del botón
+# =============================================================================
+# PRICE ESTIMATION BUTTON AND PREDICTION LOGIC
+# =============================================================================
+# Main prediction button that triggers the ML model
+
+st.sidebar.markdown("<br><br>", unsafe_allow_html=True)  # Additional space before button
 if st.sidebar.button("🔮 Estimate Price", 
                      use_container_width=True, 
                      help="Generate AI-powered price prediction based on your selections"):
     
-    # Preparar datos para el modelo
+    # Prepare data for the model
     input_params = {
         'area': area,
         'rooms': rooms,
@@ -1051,24 +1123,24 @@ if st.sidebar.button("🔮 Estimate Price",
         'district': selected_district
     }
     
-    # Intentar cargar y usar el modelo Random Forest
+    # Try to load and use the Random Forest model
     with st.spinner("Loading AI model..."):
         model, district_mapping, model_features, model_info = load_trained_model()
     
     if model is not None and district_mapping is not None and model_features is not None:
-        # Mostrar información del modelo cargado
+        # Show loaded model information
         if model_info:
             st.sidebar.info(f"🤖 **Random Forest Model Loaded**\n"
                           f"📊 Features: {len(model_features)}\n"
                           f"🏘️ Districts: {len(district_mapping)}\n"
                           f"📈 R²: {model_info.get('performance', {}).get('r2', 'N/A'):.3f}")
         
-        # Usar el modelo Random Forest entrenado
+        # Use the trained Random Forest model
         with st.spinner("Predicting with Random Forest..."):
             estimated_price = predict_with_model(model, district_mapping, model_features, model_info, input_params)
         
         if estimated_price is not None:
-            # Guardar en session state
+            # Save to session state
             st.session_state.estimated_price = estimated_price
             st.session_state.prediction_method = "Random Forest ML Model"
             st.session_state.price_breakdown = {
@@ -1082,13 +1154,13 @@ if st.sidebar.button("🔮 Estimate Price",
             
             st.sidebar.success(f"🤖 ML Prediction: €{estimated_price:,}")
         else:
-            # Error en la predicción
+            # Prediction error
             st.session_state.estimated_price = None
             st.session_state.prediction_method = "Error"
             st.session_state.price_breakdown = None
             st.sidebar.error("❌ Error making prediction with the model")
     else:
-        # Modelo no disponible
+        # Model not available
         st.session_state.estimated_price = None
         st.session_state.prediction_method = "Model not available"
         st.session_state.price_breakdown = None
@@ -1097,7 +1169,11 @@ if st.sidebar.button("🔮 Estimate Price",
     
     st.rerun()
 
-# --- Mostrar filtros activos ---
+# =============================================================================
+# ACTIVE FILTERS SUMMARY
+# =============================================================================
+# Display currently selected filters in an expandable section
+
 with st.expander("🔎 Selected Filters Summary", expanded=True):
     col1, col2 = st.columns(2)
     with col1:
@@ -1105,30 +1181,35 @@ with st.expander("🔎 Selected Filters Summary", expanded=True):
         st.markdown(f"- **Bathrooms**: {bathrooms}")
         st.markdown(f"- **Area**: {area} m²")
     with col2:
-        # Mostrar amenidades directamente
+        # Display amenities directly
         if selected_amenities:
-            amenities_names = [a.split(' ', 1)[1] for a in selected_amenities]  # Eliminar el emoji
+            amenities_names = [a.split(' ', 1)[1] for a in selected_amenities]  # Remove emoji
             amenities_text = ', '.join(amenities_names)
             st.markdown(f"- **Amenities**: {amenities_text}")
         else:
             st.markdown(f"- **Amenities**: None selected")
         
-        # Mostrar distrito sincronizado con el mapa
+        # Display district synchronized with map
         district_display = selected_district if selected_district else "Click on map to select"
         st.markdown(f"- **Selected District**: {district_display}")
         
-        # Indicador visual si hay distrito seleccionado
+        # Visual indicator if district is selected
         if selected_district:
             st.markdown(f"<span style='color: #28a745; font-weight: bold;'>✓ {selected_district} district active</span>", unsafe_allow_html=True)
         else:
             st.markdown(f"<span style='color: #ffc107; font-weight: bold;'>⚠ No district selected</span>", unsafe_allow_html=True)
 
-# --- Mostrar precio estimado de forma prominente ---
+# =============================================================================
+# PRICE PREDICTION DISPLAY
+# =============================================================================
+# Show estimated price prominently or display appropriate messages
+
 if 'estimated_price' in st.session_state and st.session_state.estimated_price is not None:
     st.markdown("### 🎯 AI Property Price Prediction")
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        # Display the estimated price in a prominent card with gradient background
         st.markdown(f"""
         <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                     padding: 2rem; 
@@ -1145,14 +1226,17 @@ if 'estimated_price' in st.session_state and st.session_state.estimated_price is
             </div>
         </div>
         """, unsafe_allow_html=True)
+
+# Handle error states if prediction was attempted but failed
 elif 'prediction_method' in st.session_state:
-    # Solo mostrar errores si ya se intentó hacer una predicción
     prediction_method = st.session_state.get("prediction_method", "Unknown")
     
+    # Display error message if model is not available
     if prediction_method == "Model not available":
         st.markdown("### ❌ Model Not Available")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
+            # Show error card indicating model needs to be trained
             st.markdown(f"""
             <div style='background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); 
                         padding: 2rem; 
@@ -1169,10 +1253,13 @@ elif 'prediction_method' in st.session_state:
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+    # Display error message if prediction failed
     elif prediction_method == "Error":
         st.markdown("### ❌ Prediction Error")
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
+            # Show error card for prediction failures
             st.markdown(f"""
             <div style='background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); 
                         padding: 2rem; 
@@ -1190,11 +1277,12 @@ elif 'prediction_method' in st.session_state:
             </div>
             """, unsafe_allow_html=True)
 else:
-    # Mensaje de bienvenida inicial - no se ha intentado hacer ninguna predicción todavía
+    # Display welcome message when no prediction has been attempted yet
     st.markdown("### 🏠 Welcome to Madrid Property Price Predictor")
     
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
+        # Show initial welcome card with instructions
         st.markdown(f"""
         <div style='background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%); 
                     padding: 2rem; 
@@ -1216,64 +1304,78 @@ else:
             </div>
         </div>
         """, unsafe_allow_html=True)
-    # Mostrar breakdown del precio en el área principal
-    if 'price_breakdown' in st.session_state and st.session_state.price_breakdown is not None:
-        breakdown = st.session_state.price_breakdown
-        prediction_method = st.session_state.get("prediction_method", "Unknown")
-        
-        if prediction_method.startswith("Random Forest"):
-            # Breakdown para modelo ML únicamente
-            st.markdown("#### 🤖 AI Model Prediction Details")
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown(f"""
-                <div style='background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; border: 1px solid rgba(255, 255, 255, 0.2);'>
-                    <h5 style='color: white; margin-bottom: 1rem;'>🧠 Model Information</h5>
-                    <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Algorithm:</strong> {breakdown.get('model_used', 'Random Forest')}</p>
-                    <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Features Used:</strong> {breakdown.get('features_used', 'Multiple')}</p>
-                    <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Confidence:</strong> {breakdown.get('confidence', 'High')}</p>
-                    <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Performance:</strong> {breakdown.get('model_performance', 'N/A')}</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            with col2:
-                st.markdown(f"""
-                <div style='background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; border: 1px solid rgba(255, 255, 255, 0.2);'>
-                    <h5 style='color: white; margin-bottom: 1rem;'>📍 Input Parameters</h5>
-                    <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>District:</strong> {breakdown.get('district', 'Not specified')}</p>
-                    <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Prediction:</strong> €{breakdown.get('base_prediction', 0):,}</p>
-                    <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Based on:</strong> ML Training Data</p>
-                    <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Data Source:</strong> Madrid Real Estate</p>
-                </div>
-                """, unsafe_allow_html=True)
-    elif 'prediction_method' in st.session_state and st.session_state.get("prediction_method") == "Model not available":
-        # Solo mostrar instrucciones si se intentó hacer una predicción pero el modelo no está disponible
-        st.markdown("#### 📋 How to Set Up the Model")
-        st.markdown("""
-        <div style='background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; border: 1px solid rgba(255, 255, 255, 0.2);'>
-            <h5 style='color: white; margin-bottom: 1rem;'>🔧 Setup Instructions</h5>
-            <ol style='color: rgba(255,255,255,0.9); margin: 0;'>
-                <li>Open the <strong>Random_Forest.ipynb</strong> notebook</li>
-                <li>Execute all cells to train the Random Forest model</li>
-                <li>The model will be automatically saved for the dashboard</li>
-                <li>Refresh this page to use the trained model</li>
-            </ol>
-        </div>
-        """, unsafe_allow_html=True)
 
-# --- Sección de estadísticas del mercado ---
+# =============================================================================
+# PREDICTION BREAKDOWN SECTION
+# =============================================================================
+# Display detailed information about the prediction if available
+
+# Show detailed breakdown for ML model predictions
+if 'price_breakdown' in st.session_state and st.session_state.price_breakdown is not None:
+    breakdown = st.session_state.price_breakdown
+    prediction_method = st.session_state.get("prediction_method", "Unknown")
+    
+    # Display breakdown only for Random Forest ML predictions
+    if prediction_method.startswith("Random Forest"):
+        st.markdown("#### 🤖 AI Model Prediction Details")
+        col1, col2 = st.columns(2)
+        
+        # Left column: Model information
+        with col1:
+            st.markdown(f"""
+            <div style='background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; border: 1px solid rgba(255, 255, 255, 0.2);'>
+                <h5 style='color: white; margin-bottom: 1rem;'>🧠 Model Information</h5>
+                <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Algorithm:</strong> {breakdown.get('model_used', 'Random Forest')}</p>
+                <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Features Used:</strong> {breakdown.get('features_used', 'Multiple')}</p>
+                <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Confidence:</strong> {breakdown.get('confidence', 'High')}</p>
+                <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Performance:</strong> {breakdown.get('model_performance', 'N/A')}</p>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Right column: Input parameters
+        with col2:
+            st.markdown(f"""
+            <div style='background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; border: 1px solid rgba(255, 255, 255, 0.2);'>
+                <h5 style='color: white; margin-bottom: 1rem;'>📍 Input Parameters</h5>
+                <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>District:</strong> {breakdown.get('district', 'Not specified')}</p>
+                <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Prediction:</strong> €{breakdown.get('base_prediction', 0):,}</p>
+                <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Based on:</strong> ML Training Data</p>
+                <p style='color: rgba(255,255,255,0.9); margin: 0.3rem 0;'><strong>Data Source:</strong> Madrid Real Estate</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+# Show setup instructions if model is not available but prediction was attempted
+elif 'prediction_method' in st.session_state and st.session_state.get("prediction_method") == "Model not available":
+    st.markdown("#### 📋 How to Set Up the Model")
+    st.markdown("""
+    <div style='background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; border: 1px solid rgba(255, 255, 255, 0.2);'>
+        <h5 style='color: white; margin-bottom: 1rem;'>🔧 Setup Instructions</h5>
+        <ol style='color: rgba(255,255,255,0.9); margin: 0;'>
+            <li>Open the <strong>Random_Forest.ipynb</strong> notebook</li>
+            <li>Execute all cells to train the Random Forest model</li>
+            <li>The model will be automatically saved for the dashboard</li>
+            <li>Refresh this page to use the trained model</li>
+        </ol>
+    </div>
+    """, unsafe_allow_html=True)
+
+# =============================================================================
+# MARKET INSIGHTS SECTION
+# =============================================================================
+# Display Madrid real estate market statistics if data is available
+
 if os.path.exists('data_clean.csv'):
     st.markdown("---")
     st.markdown("### 📈 Madrid Real Estate Market Insights")
     
     try:
-        # Cargar datos limpios
+        # Load clean data for market analysis
         df = pd.read_csv('data_clean.csv')
         
-        # Estadísticas generales del mercado
+        # Display general market statistics
         col1, col2, col3 = st.columns(3)
         
+        # Average price metric
         with col1:
             avg_price = df['PRICE'].mean()
             st.markdown(f"""
@@ -1283,6 +1385,7 @@ if os.path.exists('data_clean.csv'):
             </div>
             """, unsafe_allow_html=True)
         
+        # Average area metric
         with col2:
             avg_area = df['CONSTRUCTEDAREA'].mean()
             st.markdown(f"""
@@ -1292,6 +1395,7 @@ if os.path.exists('data_clean.csv'):
             </div>
             """, unsafe_allow_html=True)
         
+        # Price per square meter metric
         with col3:
             avg_price_per_m2 = (df['PRICE'] / df['CONSTRUCTEDAREA']).mean()
             st.markdown(f"""
@@ -1301,35 +1405,38 @@ if os.path.exists('data_clean.csv'):
             </div>
             """, unsafe_allow_html=True)
         
-        # Análisis por distritos
+        # District analysis and property size distribution
         st.markdown("<br>", unsafe_allow_html=True)
         col1, col2 = st.columns(2)
         
+        # Left column: Most expensive districts
         with col1:
             st.markdown("#### Most Expensive Districts")
             
-            # Si existe la columna DISTRICT, usarla; si no, usar DISTRICT_CODE
+            # Check which district column is available
             district_col = 'DISTRICT' if 'DISTRICT' in df.columns else 'DISTRICT_CODE'
             
             if district_col in df.columns:
-                # Top 5 distritos más caros
+                # Get top 5 most expensive districts
                 district_prices = df.groupby(district_col)['PRICE'].mean().sort_values(ascending=False).head(5)
                 
+                # Display each district with its average price
                 for i, (district, price) in enumerate(district_prices.items(), 1):
-                    # Si es código de distrito, intentar mapear al nombre
+                    # Map district code to name if needed
                     display_name = district
                     if district_col == 'DISTRICT_CODE' and os.path.exists('district_mapping.pkl'):
                         try:
                             with open('district_mapping.pkl', 'rb') as f:
                                 district_mapping = pickle.load(f)
-                            # Buscar el nombre por código
+                            # Find name by code
                             for name, code in district_mapping.items():
                                 if code == district:
                                     display_name = name
                                     break
                         except:
                             pass
-                    
+                        
+                    # Display district ranking card
                     st.markdown(f"""
                     <div style='display: flex; justify-content: space-between; align-items: center; 
                                 padding: 16px 20px; margin: 8px 0; 
@@ -1346,17 +1453,17 @@ if os.path.exists('data_clean.csv'):
             else:
                 st.markdown("*District data not available*")
         
+        # Right column: Property size distribution
         with col2:
             st.markdown("#### Property Size Distribution")
             
-            # Distribución por tamaño
+            # Calculate property size categories
             small_props = len(df[df['CONSTRUCTEDAREA'] < 60])
             medium_props = len(df[(df['CONSTRUCTEDAREA'] >= 60) & (df['CONSTRUCTEDAREA'] < 120)])
             large_props = len(df[df['CONSTRUCTEDAREA'] >= 120])
-            
             total_props = len(df)
             
-            # Crear barras visuales simples
+            # Display small properties bar
             st.markdown(f"""
             <div style='margin: 10px 0;'>
                 <div style='display: flex; justify-content: space-between; align-items: center; margin: 8px 0;'>
@@ -1369,6 +1476,7 @@ if os.path.exists('data_clean.csv'):
             </div>
             """, unsafe_allow_html=True)
             
+            # Display medium properties bar
             st.markdown(f"""
             <div style='margin: 10px 0;'>
                 <div style='display: flex; justify-content: space-between; align-items: center; margin: 8px 0;'>
@@ -1381,6 +1489,7 @@ if os.path.exists('data_clean.csv'):
             </div>
             """, unsafe_allow_html=True)
             
+            # Display large properties bar
             st.markdown(f"""
             <div style='margin: 10px 0;'>
                 <div style='display: flex; justify-content: space-between; align-items: center; margin: 8px 0;'>
@@ -1393,14 +1502,14 @@ if os.path.exists('data_clean.csv'):
             </div>
             """, unsafe_allow_html=True)
             
-            # Información adicional
+            # Additional property features information
             st.markdown("<br>", unsafe_allow_html=True)
             avg_rooms = df['ROOMNUMBER'].mean() if 'ROOMNUMBER' in df.columns else 0
-            avg_bathrooms = df['BATHNUMBER'].mean() if 'BATHNUMBER' in df.columns else 0
-            
+            avg_bathrooms = df['BATHNUMBER'].mean() if 'BATHNUMBER' in df.columns else 0            
             if avg_rooms > 0 or avg_bathrooms > 0:
                 st.markdown("#### Property Features")
                 
+                # Display average rooms
                 if avg_rooms > 0:
                     st.markdown(f"""
                     <div style='background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin: 8px 0;'>
@@ -1411,9 +1520,10 @@ if os.path.exists('data_clean.csv'):
                     </div>
                     """, unsafe_allow_html=True)
                 
+                # Display average bathrooms
                 if avg_bathrooms > 0:
                     st.markdown(f"""
-                    <div style='background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin: 8px 0;'>
+                    <div style='background: rgba(255,255,255,0.05); padding: 12px; border-radius:  8px; margin: 8px 0;'>
                         <div style='display: flex; justify-content: space-between; align-items: center;'>
                             <span style='font-weight: 500;'>Average Bathrooms</span>
                             <span style='font-size: 1.3em; font-weight: bold;'>{avg_bathrooms:.1f}</span>
@@ -1421,7 +1531,7 @@ if os.path.exists('data_clean.csv'):
                     </div>
                     """, unsafe_allow_html=True)
         
-        # Amenidades más comunes
+        # Property amenities overview section
         amenity_columns = ['HASTERRACE', 'HASLIFT', 'HASAIRCONDITIONING', 'HASGARDEN', 
                           'HASPARKINGSPACE', 'HASBOXROOM', 'HASWARDROBE', 'HASDOORMAN', 'HASSWIMMINGPOOL']
         
@@ -1431,6 +1541,7 @@ if os.path.exists('data_clean.csv'):
             st.markdown("<br>", unsafe_allow_html=True)
             with st.expander("Property Amenities Overview", expanded=False):
                 
+                # Mapping of column names to user-friendly names
                 amenity_names = {
                     'HASTERRACE': 'Terrace',
                     'HASLIFT': 'Lift',
@@ -1443,7 +1554,7 @@ if os.path.exists('data_clean.csv'):
                     'HASSWIMMINGPOOL': 'Swimming Pool'
                 }
                 
-                # Calcular porcentajes de amenidades
+                # Calculate amenity percentages
                 amenity_stats = []
                 for col in available_amenities:
                     if col in df.columns:
@@ -1451,10 +1562,10 @@ if os.path.exists('data_clean.csv'):
                         name = amenity_names.get(col, col.replace('HAS', '').title())
                         amenity_stats.append((name, percentage))
                 
-                # Ordenar por porcentaje descendente
+                # Sort by percentage descending
                 amenity_stats.sort(key=lambda x: x[1], reverse=True)
                 
-                # Mostrar todas las amenidades con barras de progreso
+                # Display all amenities with progress bars
                 for name, percentage in amenity_stats:
                     st.markdown(f"""
                     <div style='margin: 8px 0;'>
@@ -1471,19 +1582,24 @@ if os.path.exists('data_clean.csv'):
     except Exception as e:
         st.error(f"Error loading market data: {e}")
 
-# --- Sección de información del modelo ---
+# =============================================================================
+# MODEL INFORMATION SECTION
+# =============================================================================
+# Display detailed model performance metrics if the model is available
+
 if SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl'):
     st.markdown("---")
     st.markdown("### 📊 Model Information & Performance")
     
-    # Cargar información del modelo para mostrar métricas
+    # Load model information for display
     try:
         model, district_mapping, model_features, model_info = load_trained_model()
         
         if model_info and model_features and district_mapping:
-            # Métricas principales del modelo
+            # Display main model metrics
             col1, col2, col3, col4 = st.columns(4)
             
+            # R² Score metric
             with col1:
                 r2_score = model_info.get('performance', {}).get('r2', 0)
                 st.markdown(f"""
@@ -1493,6 +1609,7 @@ if SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl'):
                 </div>
                 """, unsafe_allow_html=True)
             
+            # Mean Absolute Error metric
             with col2:
                 mae = model_info.get('performance', {}).get('mae', 0)
                 st.markdown(f"""
@@ -1502,6 +1619,7 @@ if SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl'):
                 </div>
                 """, unsafe_allow_html=True)
             
+            # Features used metric
             with col3:
                 st.markdown(f"""
                 <div class='metric-container'>
@@ -1510,6 +1628,7 @@ if SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl'):
                 </div>
                 """, unsafe_allow_html=True)
             
+            # Districts covered metric
             with col4:
                 st.markdown(f"""
                 <div class='metric-container'>
@@ -1518,23 +1637,24 @@ if SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl'):
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Top features utilizadas (si están disponibles)
+            # Display feature importance if available
             if 'feature_importance' in model_info and model_info['feature_importance']:
                 st.markdown("<br>", unsafe_allow_html=True)
                 with st.expander("🔍 Top Important Features", expanded=False):
                     feature_importance = model_info['feature_importance']
                     
-                    # Crear dos columnas para mostrar las features
+                    # Create two columns for feature display
                     col1, col2 = st.columns(2)
                     
-                    # Dividir las features en dos listas
+                    # Split features into two lists
                     mid_point = len(feature_importance) // 2
                     first_half = list(feature_importance.items())[:mid_point]
                     second_half = list(feature_importance.items())[mid_point:]
                     
+                    # Display first half of features
                     with col1:
                         for feature, importance in first_half:
-                            # Traducir nombres técnicos a nombres más amigables
+                            # Translate technical names to user-friendly names
                             feature_name = feature.replace('_', ' ').title()
                             if 'DISTRICT' in feature:
                                 feature_name = 'District Location'
@@ -1547,11 +1667,13 @@ if SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl'):
                             elif 'DISTANCE' in feature:
                                 feature_name = feature.replace('DISTANCE_TO_', '').replace('_', ' ').title() + ' Distance'
                             
+
                             st.markdown(f"**{feature_name}:** {importance:.3f}")
                     
+                    # Display second half of features
                     with col2:
                         for feature, importance in second_half:
-                            # Traducir nombres técnicos a nombres más amigables
+                            # Translate technical names to user-friendly names
                             feature_name = feature.replace('_', ' ').title()
                             if 'DISTRICT' in feature:
                                 feature_name = 'District Location'
@@ -1564,15 +1686,21 @@ if SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl'):
                             elif 'DISTANCE' in feature:
                                 feature_name = feature.replace('DISTANCE_TO_', '').replace('_', ' ').title() + ' Distance'
                             
+
                             st.markdown(f"**{feature_name}:** {importance:.3f}")
                             
+
     except Exception as e:
         st.error(f"Error loading model information: {e}")
 
-# --- Footer ---
+# =============================================================================
+# FOOTER SECTION
+# =============================================================================
+# Display application footer with credits and technology information
+
 st.markdown("---")
-st.markdown("""
-<div style='text-align: center; color: rgba(255,255,255,0.7); margin-top: 2rem;'>
+st.markdown(""" 
+<div style='text-align: center; color: rgba(255, 255, 255, 0.7); margin-top: 2rem;'>
     <p>🏠 Madrid Property Price Prediction Dashboard</p>
     <p>Powered by Random Forest Machine Learning • Built with Streamlit</p>
 </div>
