@@ -6,7 +6,7 @@ import pandas as pd
 import os
 import pickle
 import joblib
-from config.constants import DATA_FILES, AMENITY_NAMES
+from config.constants import DATA_FILES, AMENITY_NAMES, MODEL_FILES
 
 try:
     from sklearn.ensemble import RandomForestRegressor
@@ -49,7 +49,9 @@ def render_market_insights():
             
             # Price per square meter metric
             with col3:
-                avg_price_per_m2 = (df['PRICE'] / df['CONSTRUCTEDAREA']).mean()
+                avg_price = df['PRICE'].mean()
+                avg_area = df['CONSTRUCTEDAREA'].mean()
+                avg_price_per_m2 = avg_price / avg_area
                 st.markdown(f"""
                 <div class='metric-container'>
                     <div class='metric-value'>€{avg_price_per_m2:.0f}/m²</div>
@@ -76,17 +78,14 @@ def render_market_insights():
                     for i, (district, price) in enumerate(district_prices.items(), 1):
                         # Map district code to name if needed
                         display_name = district
-                        if district_col == 'DISTRICT_CODE' and os.path.exists('district_mapping.pkl'):
-                            try:
-                                with open('district_mapping.pkl', 'rb') as f:
-                                    district_mapping = pickle.load(f)
-                                # Find name by code
-                                for name, code in district_mapping.items():
-                                    if code == district:
-                                        display_name = name
-                                        break
-                            except:
-                                pass
+                        if district_col == 'DISTRICT_CODE' and os.path.exists(MODEL_FILES['district_mapping']):
+                            with open(MODEL_FILES['district_mapping'], 'rb') as f:
+                                district_mapping = pickle.load(f)
+                            # Find name by code
+                            for name, code in district_mapping.items():
+                                if code == district:
+                                    display_name = name
+                                    break
                                 
                         # Display district ranking card
                         st.markdown(f"""
@@ -239,7 +238,7 @@ def render_market_insights():
 
 def render_model_info():
     """Render model information section exactly as in dashboard.py"""
-    if SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl'):
+    if SKLEARN_AVAILABLE and os.path.exists(MODEL_FILES['model']):
         st.markdown("---")
         st.markdown("### 📊 Model Information & Performance")
         
@@ -349,20 +348,20 @@ def load_trained_model():
     Returns: model, district_mapping, model_features, model_info
     """
     try:
-        if SKLEARN_AVAILABLE and os.path.exists('random_forest_model.pkl'):
+        if SKLEARN_AVAILABLE and os.path.exists(MODEL_FILES['model']):
             # Load the trained model
-            model = joblib.load('random_forest_model.pkl')
+            model = joblib.load(MODEL_FILES['model'])
             
             # Load district name to DISTRICT_CODE mapping
-            with open('district_mapping.pkl', 'rb') as f:
+            with open(MODEL_FILES['district_mapping'], 'rb') as f:
                 district_mapping = pickle.load(f)
             
             # Load model features list
-            with open('model_features.pkl', 'rb') as f:
+            with open(MODEL_FILES['model_features'], 'rb') as f:
                 model_features = pickle.load(f)
                 
             # Load model information (optional)
-            with open('model_info.pkl', 'rb') as f:
+            with open(MODEL_FILES['model_info'], 'rb') as f:
                 model_info = pickle.load(f)
             
             return model, district_mapping, model_features, model_info

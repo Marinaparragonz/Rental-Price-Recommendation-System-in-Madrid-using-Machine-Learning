@@ -107,10 +107,10 @@ def _render_prediction_button(selected_amenities):
         
         if model is not None:
             if model_info:
-                st.sidebar.info(f"🤖 **Random Forest Model Loaded**\n"
-                              f"📊 Features: {len(model_features)}\n"
-                              f"🏘️ Districts: {len(district_mapping)}\n"
-                              f"📈 R²: {model_info.get('performance', {}).get('r2', 'N/A'):.3f}")
+                st.sidebar.info(f"**Random Forest Model Loaded**\n"
+                              f"Features: {len(model_features)}\n"
+                              f"Districts: {len(district_mapping)}\n"
+                              f"R²: {model_info.get('performance', {}).get('r2', 'N/A'):.3f}")
             
             with st.spinner("Predicting with Random Forest..."):
                 estimated_price = predict_with_model(model, district_mapping, model_features, model_info, input_params)
@@ -126,17 +126,17 @@ def _render_prediction_button(selected_amenities):
                     'confidence': 'High (ML Model)',
                     'model_performance': f"R²: {model_info.get('performance', {}).get('r2', 'N/A'):.3f}"
                 }
-                st.sidebar.success(f"🤖 ML Prediction: €{estimated_price:,}")
+                st.sidebar.success(f"ML Prediction: €{estimated_price:,}")
             else:
                 st.session_state.estimated_price = None
                 st.session_state.prediction_method = "Error"
                 st.session_state.price_breakdown = None
-                st.sidebar.error("❌ Error making prediction with the model")
+                st.sidebar.error("Error making prediction with the model")
         else:
             st.session_state.estimated_price = None
             st.session_state.prediction_method = "Model not available"
             st.session_state.price_breakdown = None
-            st.sidebar.error("❌ Random Forest model not available. Please train and save the model first.")
-            st.sidebar.info("📝 Run the Random_Forest.ipynb notebook to train and save the model.")
+            st.sidebar.error(" Random Forest model not available. Please train and save the model first.")
+            st.sidebar.info("Run the Random_Forest.ipynb notebook to train and save the model.")
         
         st.rerun()

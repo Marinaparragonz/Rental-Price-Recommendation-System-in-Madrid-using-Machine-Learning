@@ -110,27 +110,6 @@ def main():
     render_footer()
 
 # =============================================================================
-# ERROR HANDLING AND DEBUGGING
-# =============================================================================
-
-def display_debug_info():
-    """Display debug information in development mode"""
-    if st.sidebar.checkbox("🔧 Debug Mode", value=False):
-        st.sidebar.markdown("---")
-        st.sidebar.markdown("### Debug Information")
-        
-        with st.sidebar.expander("Session State", expanded=False):
-            st.write("**Current Session State:**")
-            for key, value in st.session_state.items():
-                st.write(f"- {key}: {value}")
-        
-        with st.sidebar.expander("System Info", expanded=False):
-            st.write("**System Information:**")
-            st.write(f"- Python: {sys.version}")
-            st.write(f"- Working Directory: {os.getcwd()}")
-            st.write(f"- Streamlit Version: {st.__version__}")
-
-# =============================================================================
 # EXCEPTION HANDLING
 # =============================================================================
 
@@ -139,11 +118,8 @@ def safe_main():
     try:
         main()
         
-        # Display debug info if needed
-        display_debug_info()
-        
     except ImportError as e:
-        st.error(f"❌ Import Error: {str(e)}")
+        st.error(f"Import Error: {str(e)}")
         st.info("Please ensure all required packages are installed and all component files are present.")
         st.code("""
         # Install required packages:
@@ -151,7 +127,7 @@ def safe_main():
         """)
         
     except FileNotFoundError as e:
-        st.error(f"❌ File Not Found: {str(e)}")
+        st.error(f"File Not Found: {str(e)}")
         st.info("Please ensure all required data files are in the correct directory:")
         st.markdown("""
         **Required files:**
@@ -164,7 +140,7 @@ def safe_main():
         """)
         
     except Exception as e:
-        st.error(f"❌ Unexpected Error: {str(e)}")
+        st.error(f"Unexpected Error: {str(e)}")
         st.info("Please check the console for detailed error information.")
         
         # Show error details in expander
