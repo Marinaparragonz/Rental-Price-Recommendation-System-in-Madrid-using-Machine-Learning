@@ -4,5 +4,5 @@ __pycache__/
 # Virtual environments
 venv/
 
-# Model files (optional - uncomment if files are too large)
+# Model files 
 random_forest_model.pkl
