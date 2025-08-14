@@ -4,6 +4,7 @@ Prediction display and filters summary components
 import streamlit as st
 import pandas as pd
 import os
+from config.constants import MODEL_FILES
 import pickle
 
 def render_filters_summary(selected_amenities=None, rooms=None, bathrooms=None, area=None, selected_district=None):
@@ -158,7 +159,7 @@ def _render_welcome_message():
 
 
 def render_prediction_breakdown():
-    """Render detailed prediction breakdown if available - exactly as in dashboard.py"""
+    """Render detailed prediction breakdown if available - from model_info.pkl"""
     
     # Show detailed breakdown for ML model predictions
     if 'price_breakdown' in st.session_state and st.session_state.price_breakdown is not None:
@@ -166,60 +167,95 @@ def render_prediction_breakdown():
         prediction_method = st.session_state.get("prediction_method", "Unknown")
         
         if prediction_method.startswith("Random Forest"):
-            model_name = breakdown.get('model_used', 'Random Forest')
+            try:
+                with open(MODEL_FILES['model_info'], 'rb') as f:
+                    model_info = pickle.load(f)
+                
+                performance = model_info.get('performance', {})
+                r2_value = performance.get('r2', 0.0)
+                mae_value = performance.get('mae', 0.0)
+                rmse_value = performance.get('rmse', 0.0)
+                features_used = len(model_info.get('features', []))
+                
+                model_name = model_info.get('model_type', 'Random Forest')
+                
+            except Exception as e:
+                # Fallback values si no se puede cargar
+                r2_value = 0.0
+                mae_value = 0.0
+                rmse_value = 0.0
+                features_used = 20
+                model_name = 'Random Forest'
+            
             st.markdown(f"#### {model_name} Model Performance")
 
-            rmse_value = breakdown.get('rmse', 85674)
-            r2_value = breakdown.get('r2', 0.9251)
-            features_value = breakdown.get('features_used', '20')
-            
+           
             if isinstance(rmse_value, (int, float)):
                 rmse_display = f"€{rmse_value:,.0f}"
             else:
                 rmse_display = f"€{rmse_value}"
+            
+            if isinstance(mae_value, (int, float)):
+                mae_display = f"€{mae_value:,.0f}"
+            else:
+                mae_display = f"€{mae_value}"
             
             if isinstance(r2_value, (int, float)):
                 r2_display = f"{r2_value:.4f}"
             else:
                 r2_display = f"{r2_value}"
             
-            col1, col2, col3 = st.columns(3)
+    
+            col1, col2, col3, col4 = st.columns(4)
             
             # Column 1: Features Used
             with col1:
                 st.markdown(f"""
-                <div style='background: rgba(162, 155, 254, 0.3); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; text-align: center; box-shadow: 0 8px 25px rgba(162, 155, 254, 0.2); border: 1px solid rgba(162, 155, 254, 0.4);'>
-                    <div style='font-size: 2rem; margin-bottom: 0.5rem; color: white; font-weight: bold; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);'>
-                        {features_value}
+                <div style='background: rgba(102, 126, 234, 0.3); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; text-align: center; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.4);'>
+                    <div style='font-size: 1.8rem; margin-bottom: 0.5rem; color: white; font-weight: bold; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);'>
+                        {features_used}
                     </div>
-                    <div style='color: rgba(255,255,255,0.95); font-size: 0.9rem; font-weight: 600;'>
+                    <div style='color: rgba(255,255,255,0.95); font-size: 0.85rem; font-weight: 600;'>
                         Features Used
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Column 2: RMSE
+            # Column 2: R² Score
             with col2:
                 st.markdown(f"""
-                <div style='background: rgba(162, 155, 254, 0.3); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; text-align: center; box-shadow: 0 8px 25px rgba(162, 155, 254, 0.2); border: 1px solid rgba(162, 155, 254, 0.4);'>
-                    <div style='font-size: 2rem; margin-bottom: 0.5rem; color: white; font-weight: bold; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);'>
-                        {rmse_display}
+                <div style='background: rgba(102, 126, 234, 0.3); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; text-align: center; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.4);'>
+                    <div style='font-size: 1.8rem; margin-bottom: 0.5rem; color: white; font-weight: bold; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);'>
+                        {r2_display}
                     </div>
-                    <div style='color: rgba(255,255,255,0.95); font-size: 0.9rem; font-weight: 600;'>
-                        RMSE
+                    <div style='color: rgba(255,255,255,0.95); font-size: 0.85rem; font-weight: 600;'>
+                        R² Score
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
             
-            # Column 3: R² Score
+            # Column 3: MAE
             with col3:
                 st.markdown(f"""
-                <div style='background: rgba(162, 155, 254, 0.3); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; text-align: center; box-shadow: 0 8px 25px rgba(162, 155, 254, 0.2); border: 1px solid rgba(162, 155, 254, 0.4);'>
-                    <div style='font-size: 2rem; margin-bottom: 0.5rem; color: white; font-weight: bold; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);'>
-                        {r2_display}
+                <div style='background: rgba(102, 126, 234, 0.3); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; text-align: center; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.4);'>
+                    <div style='font-size: 1.8rem; margin-bottom: 0.5rem; color: white; font-weight: bold; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);'>
+                        {mae_display}
                     </div>
-                    <div style='color: rgba(255,255,255,0.95); font-size: 0.9rem; font-weight: 600;'>
-                        R² Score
+                    <div style='color: rgba(255,255,255,0.95); font-size: 0.85rem; font-weight: 600;'>
+                        MAE
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Column 4: RMSE
+            with col4:
+                st.markdown(f"""
+                <div style='background: rgba(102, 126, 234, 0.3); backdrop-filter: blur(15px); padding: 1.5rem; border-radius: 15px; margin: 1rem 0; text-align: center; box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2); border: 1px solid rgba(102, 126, 234, 0.4);'>
+                    <div style='font-size: 1.8rem; margin-bottom: 0.5rem; color: white; font-weight: bold; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);'>
+                        {rmse_display}
+                    </div>
+                    <div style='color: rgba(255,255,255,0.95); font-size: 0.85rem; font-weight: 600;'>
+                        RMSE
                     </div>
                 </div>
                 """, unsafe_allow_html=True)

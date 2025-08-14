@@ -49,9 +49,9 @@ def render_market_insights():
             
             # Price per square meter metric
             with col3:
-                avg_price = df['PRICE'].mean()
-                avg_area = df['CONSTRUCTEDAREA'].mean()
-                avg_price_per_m2 = avg_price / avg_area
+                total_price = df['PRICE'].sum()
+                total_area = df['CONSTRUCTEDAREA'].sum()
+                avg_price_per_m2 = total_price / total_area
                 st.markdown(f"""
                 <div class='metric-container'>
                     <div class='metric-value'>€{avg_price_per_m2:.0f}/m²</div>
@@ -79,8 +79,11 @@ def render_market_insights():
                         # Map district code to name if needed
                         display_name = district
                         if district_col == 'DISTRICT_CODE' and os.path.exists(MODEL_FILES['district_mapping']):
-                            with open(MODEL_FILES['district_mapping'], 'rb') as f:
-                                district_mapping = pickle.load(f)
+                            try:
+                                with open(MODEL_FILES['district_mapping'], 'rb') as f:
+                                    district_mapping = pickle.load(f)
+                            except Exception:
+                                district_mapping = {}  # Fallback vacío
                             # Find name by code
                             for name, code in district_mapping.items():
                                 if code == district:
@@ -160,27 +163,19 @@ def render_market_insights():
                 
                 st.markdown("#### Property Features")
                 
-                # Display average rooms
-                if avg_rooms > 0:
-                    st.markdown(f"""
-                    <div style='background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin: 8px 0;'>
-                        <div style='display: flex; justify-content: space-between; align-items: center;'>
-                            <span style='font-weight: 500;'>Average Rooms</span>
-                            <span style='font-size: 1.3em; font-weight: bold;'>{avg_rooms:.1f}</span>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
                 
-                # Display average bathrooms
-                if avg_bathrooms > 0:
-                    st.markdown(f"""
-                    <div style='background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin: 8px 0;'>
-                        <div style='display: flex; justify-content: space-between; align-items: center;'>
-                            <span style='font-weight: 500;'>Average Bathrooms</span>
-                            <span style='font-size: 1.3em; font-weight: bold;'>{avg_bathrooms:.1f}</span>
-                        </div>
+                st.markdown(f"""
+                <div style='background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px; margin: 8px 0;'>
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'>
+                        <span style='font-weight: 500;'>Average Rooms</span>
+                        <span style='font-size: 1.3em; font-weight: bold;'>{avg_rooms}</span>
                     </div>
-                    """, unsafe_allow_html=True)
+                    <div style='display: flex; justify-content: space-between; align-items: center;'>
+                        <span style='font-weight: 500;'>Average Bathrooms</span>
+                        <span style='font-size: 1.3em; font-weight: bold;'>{avg_bathrooms}</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
         
             # Property amenities overview section
             amenity_columns = ['HASTERRACE', 'HASLIFT', 'HASAIRCONDITIONING', 'HASGARDEN', 
@@ -232,141 +227,3 @@ def render_market_insights():
             
         except Exception as e:
             st.error(f"Error loading market data: {e}")
-    else:
-        st.warning("📊 Market data not available. Please ensure data_clean.csv is in the project directory.")
-
-
-def render_model_info():
-    """Render model information section exactly as in dashboard.py"""
-    if SKLEARN_AVAILABLE and os.path.exists(MODEL_FILES['model']):
-        st.markdown("---")
-        st.markdown("### 📊 Model Information & Performance")
-        
-        # Load model information for display
-        try:
-            model, district_mapping, model_features, model_info = load_trained_model()
-            
-            if model_info and model_features and district_mapping:
-                # Display main model metrics
-                col1, col2, col3, col4 = st.columns(4)
-                
-                # R² Score metric
-                with col1:
-                    r2_score = model_info.get('performance', {}).get('r2', 0)
-                    st.markdown(f"""
-                    <div class='metric-container'>
-                        <div class='metric-value'>{r2_score:.3f}</div>
-                        <div class='metric-label'>R² Score</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Mean Absolute Error metric
-                with col2:
-                    mae = model_info.get('performance', {}).get('mae', 0)
-                    st.markdown(f"""
-                    <div class='metric-container'>
-                        <div class='metric-value'>€{mae:,.0f}</div>
-                        <div class='metric-label'>Mean Absolute Error</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Features used metric
-                with col3:
-                    st.markdown(f"""
-                    <div class='metric-container'>
-                        <div class='metric-value'>{len(model_features)}</div>
-                        <div class='metric-label'>Features Used</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Districts covered metric
-                with col4:
-                    st.markdown(f"""
-                    <div class='metric-container'>
-                        <div class='metric-value'>{len(district_mapping)}</div>
-                        <div class='metric-label'>Districts Covered</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                
-                # Display feature importance if available
-                if 'feature_importance' in model_info and model_info['feature_importance']:
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    with st.expander("🔍 Top Important Features", expanded=False):
-                        feature_importance = model_info['feature_importance']
-                        
-                        # Create two columns for feature display
-                        col1, col2 = st.columns(2)
-                        
-                        # Split features into two lists
-                        mid_point = len(feature_importance) // 2
-                        first_half = list(feature_importance.items())[:mid_point]
-                        second_half = list(feature_importance.items())[mid_point:]
-                        
-                        # Display first half of features
-                        with col1:
-                            for feature, importance in first_half:
-                                # Translate technical names to user-friendly names
-                                feature_name = feature.replace('_', ' ').title()
-                                if 'DISTRICT' in feature:
-                                    feature_name = 'District Location'
-                                elif 'CONSTRUCTEDAREA' in feature:
-                                    feature_name = 'Property Area'
-                                elif 'ROOMNUMBER' in feature:
-                                    feature_name = 'Number of Rooms'
-                                elif 'BATHNUMBER' in feature:
-                                    feature_name = 'Number of Bathrooms'
-                                elif 'DISTANCE' in feature:
-                                    feature_name = feature.replace('DISTANCE_TO_', '').replace('_', ' ').title() + ' Distance'
-                                
-                                st.markdown(f"**{feature_name}:** {importance:.3f}")
-                        
-                        # Display second half of features
-                        with col2:
-                            for feature, importance in second_half:
-                                # Translate technical names to user-friendly names
-                                feature_name = feature.replace('_', ' ').title()
-                                if 'DISTRICT' in feature:
-                                    feature_name = 'District Location'
-                                elif 'CONSTRUCTEDAREA' in feature:
-                                    feature_name = 'Property Area'
-                                elif 'ROOMNUMBER' in feature:
-                                    feature_name = 'Number of Rooms'
-                                elif 'BATHNUMBER' in feature:
-                                    feature_name = 'Number of Bathrooms'
-                                elif 'DISTANCE' in feature:
-                                    feature_name = feature.replace('DISTANCE_TO_', '').replace('_', ' ').title() + ' Distance'
-                                
-                                st.markdown(f"**{feature_name}:** {importance:.3f}")
-                
-        except Exception as e:
-            st.error(f"Error loading model information: {e}")
-
-@st.cache_resource
-def load_trained_model():
-    """
-    Loads the trained Random Forest model and its associated components
-    Returns: model, district_mapping, model_features, model_info
-    """
-    try:
-        if SKLEARN_AVAILABLE and os.path.exists(MODEL_FILES['model']):
-            # Load the trained model
-            model = joblib.load(MODEL_FILES['model'])
-            
-            # Load district name to DISTRICT_CODE mapping
-            with open(MODEL_FILES['district_mapping'], 'rb') as f:
-                district_mapping = pickle.load(f)
-            
-            # Load model features list
-            with open(MODEL_FILES['model_features'], 'rb') as f:
-                model_features = pickle.load(f)
-                
-            # Load model information (optional)
-            with open(MODEL_FILES['model_info'], 'rb') as f:
-                model_info = pickle.load(f)
-            
-            return model, district_mapping, model_features, model_info
-        else:
-            return None, None, None, None
-    except Exception as e:
-        st.error(f"Error loading model: {e}")
-        return None, None, None, None

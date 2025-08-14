@@ -19,7 +19,7 @@ from components.header import render_header
 from components.sidebar import render_sidebar
 from components.map_component import render_map
 from components.prediction_display import render_prediction_display, render_filters_summary, render_prediction_breakdown 
-from components.market_insights import render_market_insights, render_model_info
+from components.market_insights import render_market_insights
 from components.footer import render_footer
 
 # =============================================================================
@@ -102,9 +102,7 @@ def main():
         
         # 3.4 MARKET INSIGHTS SECTION
         render_market_insights()
-        
-        # 3.5 MODEL INFORMATION SECTION
-        render_model_info()
+
     
     # 4. FOOTER SECTION
     render_footer()
