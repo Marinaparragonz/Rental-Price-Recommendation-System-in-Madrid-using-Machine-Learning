@@ -1,3 +1,8 @@
-random_forest_model.pkl
-random_forest_model.pkl
+# Python
+__pycache__/
+
+# Virtual environments
+venv/
+
+# Model files (optional - uncomment if files are too large)
 random_forest_model.pkl
