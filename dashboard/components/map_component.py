@@ -4,10 +4,9 @@ Map component for district selection
 import streamlit as st
 import folium
 import geopandas as gpd
-import pandas as pd
 import os
 from streamlit_folium import st_folium
-from config.constants import MADRID_CENTER, DEFAULT_ZOOM, DATA_FILES
+from config.constants import DATA_FILES
 
 # Optional imports with error handling
 try:
@@ -20,33 +19,32 @@ def render_map():
     """Render the interactive Madrid districts map"""
     
     try:
-        # --- Cargar datos GeoJSON y obtener distrito seleccionado ---
+        # --- Load GeoJSON data and get selected district ---
         if os.path.exists(DATA_FILES['geojson']):
             gdf_districts = gpd.read_file(DATA_FILES['geojson'])
-            gdf_districts = gdf_districts.to_crs(epsg=4326)  # Asegurar formato lat/lon
+            gdf_districts = gdf_districts.to_crs(epsg=4326)  # Ensure lat/lon format
             
-            # --- Inicializar distrito seleccionado desde session_state ---
+            # --- Initialize selected district from session_state ---
             selected_district = st.session_state.get("last_selected_district", None)
 
-            # --- Crear el mapa ---
+            # --- Create the map ---
             madrid_center = [40.4168, -3.7038]
             m = folium.Map(
                 location=madrid_center, 
                 zoom_start=12, 
                 tiles="CartoDB positron",
-                # Desactivar controles que pueden generar elementos visuales no deseados
                 control_scale=False,
                 prefer_canvas=True
             )
 
-            # --- Añadir polígonos de distritos con eventos ---
+            # --- Add district polygons with events ---
             for idx, row in gdf_districts.iterrows():
                 district_name = row["name"]
                 
-                # Determinar si este distrito está seleccionado
+                # Determine if this district is selected
                 is_selected = (selected_district == district_name)
                 
-                # Crear el polígono con configuración mejorada para capturar clics
+                # Create polygon with improved configuration to capture clicks
                 geojson_layer = folium.GeoJson(
                     data=row["geometry"],
                     style_function=lambda feature, name=district_name, selected=is_selected: {
@@ -61,7 +59,7 @@ def render_map():
                         'weight': 3,
                         'fillOpacity': 0.7,
                     },
-                    # Agregar tooltip con el nombre del distrito (aparece al hacer hover)
+                    # Add tooltip with district name (appears on hover)
                     tooltip=folium.Tooltip(
                         text=f"{'✓ ' if is_selected else ''}{district_name}",
                         permanent=False,
@@ -85,13 +83,13 @@ def render_map():
                             transform: translateY(-2px);
                         """
                     )
-                    # No popup para evitar recuadros molestos al hacer clic
+                    # No popup to avoid annoying boxes when clicking
                 )
                 
-                # Añadir el polígono al mapa
+                # Add polygon to map
                 geojson_layer.add_to(m)
 
-            # --- Mostrar mapa e interactuar ---
+            # --- Display map and interact ---
             st.markdown("""
             <div class='map-container'>
                 <h2 style='color: white; text-align: center; margin-bottom: 20px;'> 📍 Select District by Clicking on the Map</h2>
@@ -104,25 +102,16 @@ def render_map():
                 height=600, 
                 returned_objects=["last_object_clicked_tooltip", "last_object_clicked"],
                 key="madrid_map",
-                # Desactivar funcionalidades que pueden causar elementos visuales no deseados
-                feature_group_to_add=None,
-                zoom=None,
-                # Configuraciones adicionales para evitar popups
                 use_container_width=True
             )
 
-            # Añadir CSS adicional para eliminar completamente cualquier popup o elemento visual no deseado
+            # Add additional CSS to completely remove any popup or unwanted visual element
             _add_map_styling()
             
             # Handle map interactions
             _handle_map_interactions(map_data, gdf_districts)
             
-            # Enhanced JavaScript to aggressively remove unwanted map elements
             _add_map_cleanup_script()
-            
-        else:
-            st.error(f"❌ GeoJSON file not found: {DATA_FILES['geojson']}")
-            st.info("📁 Please ensure the madrid-districts.geojson file is in the project directory.")
             
     except Exception as e:
         st.error(f"❌ Error loading map: {str(e)}")
@@ -134,28 +123,22 @@ def _handle_map_interactions(map_data, gdf_districts):
         new_selected_district = None
         district_changed = False
 
-        # Check different ways to get the selected district
         if map_data:
-            # Method 1: Using last_object_clicked_tooltip
             if map_data.get("last_object_clicked_tooltip"):
                 tooltip_text = map_data["last_object_clicked_tooltip"]
-                # Remove checkmark if exists
                 new_district = tooltip_text.replace("✓ ", "") if tooltip_text.startswith("✓ ") else tooltip_text
                 if new_district != st.session_state.get("last_selected_district"):
                     new_selected_district = new_district
                     district_changed = True
             
-            # Method 2: Using click coordinates to find district
+            # Fallback method: Using coordinates (only if tooltip fails)
             elif map_data.get("last_object_clicked") and isinstance(map_data["last_object_clicked"], dict):
                 clicked_coords = map_data["last_object_clicked"]
                 if "lat" in clicked_coords and "lng" in clicked_coords and SHAPELY_AVAILABLE:
                     lat = clicked_coords["lat"]
                     lng = clicked_coords["lng"]
+                    clicked_point = Point(lng, lat)
                     
-                    # Create point with click coordinates
-                    clicked_point = Point(lng, lat)  # Note: shapely uses (lng, lat)
-                    
-                    # Find which district contains the point
                     for _, district_row in gdf_districts.iterrows():
                         try:
                             if district_row["geometry"].contains(clicked_point):
@@ -166,32 +149,11 @@ def _handle_map_interactions(map_data, gdf_districts):
                                 break
                         except Exception:
                             continue
-            
-            # Method 3: Other fallback methods
-            elif map_data.get("last_clicked") and map_data["last_clicked"].get("tooltip"):
-                tooltip_text = map_data["last_clicked"]["tooltip"]
-                new_district = tooltip_text.replace("✓ ", "") if tooltip_text.startswith("✓ ") else tooltip_text
-                if new_district != st.session_state.get("last_selected_district"):
-                    new_selected_district = new_district
-                    district_changed = True
-            
-            elif map_data.get("objects_clicked") and len(map_data["objects_clicked"]) > 0:
-                last_clicked = map_data["objects_clicked"][-1]
-                if "tooltip" in last_clicked:
-                    tooltip_text = last_clicked["tooltip"]
-                    new_district = tooltip_text.replace("✓ ", "") if tooltip_text.startswith("✓ ") else tooltip_text
-                    if new_district != st.session_state.get("last_selected_district"):
-                        new_selected_district = new_district
-                        district_changed = True
 
-        # Update selected district
+        # Update state
         if new_selected_district:
-            selected_district = new_selected_district
-            st.session_state["last_selected_district"] = selected_district
-        elif "last_selected_district" in st.session_state:
-            selected_district = st.session_state["last_selected_district"]
+            st.session_state["last_selected_district"] = new_selected_district
             
-        # If district changed, force reload to update interface and map
         if district_changed:
             st.rerun()
                     
@@ -202,7 +164,7 @@ def _add_map_styling():
     """Add CSS styling to remove unwanted map elements"""
     st.markdown("""
     <style>
-    /* Eliminar popups y overlays completamente */
+    /* Remove popups and overlays completely */
     .leaflet-popup-pane {
         display: none !important;
         visibility: hidden !important;
@@ -220,7 +182,7 @@ def _add_map_styling():
         visibility: hidden !important;
     }
 
-    /* Eliminar overlays de selección molestos */
+    /* Remove annoying selection overlays */
     .leaflet-overlay-pane .leaflet-interactive:focus {
         outline: none !important;
         box-shadow: none !important;
@@ -232,7 +194,7 @@ def _add_map_styling():
         box-shadow: none !important;
     }
 
-    /* Asegurar que no hay bordes negros o elementos visuales molestos */
+    /* Ensure no black borders or annoying visual elements */
     .leaflet-clickable {
         outline: none !important;
     }
@@ -241,7 +203,7 @@ def _add_map_styling():
         display: none !important;
     }
 
-    /* Mejorar la apariencia del tooltip */
+    /* Improve tooltip appearance */
     .leaflet-tooltip {
         background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.98) 100%) !important;
         border: 1px solid rgba(102, 126, 234, 0.3) !important;
@@ -277,9 +239,9 @@ def _add_map_cleanup_script():
     """Add JavaScript to remove unwanted map elements"""
     st.markdown("""
     <script>
-    // Función para eliminar popups y elementos visuales no deseados de manera más agresiva
+    // Function to remove popups and unwanted visual elements more aggressively
     function removeUnwantedMapElements() {
-        // Eliminar todos los popups
+        // Remove all popups
         const popups = document.querySelectorAll('.leaflet-popup, .leaflet-popup-pane, .leaflet-popup-content-wrapper, .leaflet-popup-tip');
         popups.forEach(popup => {
             popup.style.display = 'none';
@@ -288,23 +250,23 @@ def _add_map_cleanup_script():
             popup.remove();
         });
         
-        // Eliminar contenedores de popup
+        // Remove popup containers
         const popupPanes = document.querySelectorAll('.leaflet-popup-pane');
         popupPanes.forEach(pane => {
             pane.style.display = 'none';
             pane.innerHTML = '';
         });
         
-        // Asegurar que no hay overlays molestos
+        // Ensure no annoying overlays
         const overlays = document.querySelectorAll('.leaflet-overlay-pane .leaflet-interactive');
         overlays.forEach(overlay => {
             overlay.style.outline = 'none';
             overlay.style.boxShadow = 'none';
-            // Eliminar cualquier listener de click que pueda generar popups
+            // Remove any click listener that might generate popups
             overlay.removeEventListener('click', null);
         });
         
-        // Eliminar cualquier elemento con recuadros negros
+        // Remove any element with black boxes
         const interactiveElements = document.querySelectorAll('.leaflet-interactive');
         interactiveElements.forEach(el => {
             el.style.outline = 'none';
@@ -313,10 +275,10 @@ def _add_map_cleanup_script():
         });
     }
 
-    // Ejecutar la función inmediatamente
+    // Execute function immediately
     removeUnwantedMapElements();
 
-    // Ejecutar la función cada vez que se detecte un cambio en el mapa
+    // Execute function every time a change is detected in the map
     const observer = new MutationObserver(function(mutations) {
         mutations.forEach(function(mutation) {
             if (mutation.type === 'childList') {
@@ -335,19 +297,17 @@ def _add_map_cleanup_script():
         });
     }
 
-    // También ejecutar cuando se hace clic en el mapa o cuando se carga
+    // Also execute when clicking on the map or when loading
     document.addEventListener('click', function(e) {
         if (e.target.closest('.folium-map')) {
             setTimeout(removeUnwantedMapElements, 10);
-            setTimeout(removeUnwantedMapElements, 50);
-            setTimeout(removeUnwantedMapElements, 200);
         }
     });
 
-    // Ejecutar periódicamente para asegurar que no aparezcan elementos no deseados
+    // Execute periodically to ensure unwanted elements don't appear
     setInterval(removeUnwantedMapElements, 1000);
 
-    // Ejecutar cuando la página esté completamente cargada
+    // Execute when page is fully loaded
     window.addEventListener('load', function() {
         setTimeout(removeUnwantedMapElements, 500);
     });

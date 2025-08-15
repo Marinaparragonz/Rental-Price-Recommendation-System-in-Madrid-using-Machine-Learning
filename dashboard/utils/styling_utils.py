@@ -11,9 +11,44 @@ def apply_custom_css():
         /* Import Google Fonts */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
+        :root {
+            --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --gradient-sidebar: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+            --gradient-button: linear-gradient(45deg, #667eea, #764ba2);
+            --gradient-button-hover: linear-gradient(45deg, #764ba2, #667eea);
+            --glass-bg-05: rgba(255, 255, 255, 0.05);
+            --glass-bg-1: rgba(255, 255, 255, 0.1);
+            --glass-bg-2: rgba(255, 255, 255, 0.2);
+            --glass-bg-25: rgba(255, 255, 255, 0.25);
+            --glass-bg-6: rgba(255, 255, 255, 0.6);
+            --glass-border-2: rgba(255, 255, 255, 0.2);
+            --glass-border-3: rgba(255, 255, 255, 0.3);
+            --glass-border-4: rgba(255, 255, 255, 0.4);
+            --glass-border-6: rgba(255, 255, 255, 0.6);
+            --blur-10: blur(10px);
+            --blur-15: blur(15px);
+            --blur-20: blur(20px);
+            --radius-15: 15px;
+            --radius-20: 20px;
+            --radius-25: 25px;
+            --shadow-form: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-button: 0 4px 15px rgba(102, 126, 234, 0.4);
+            --shadow-button-hover: 0 6px 20px rgba(102, 126, 234, 0.6);
+            --shadow-sidebar-button: 0 6px 20px rgba(102, 126, 234, 0.4);
+            --shadow-sidebar-button-hover: 0 8px 25px rgba(102, 126, 234, 0.6);
+            --shadow-text: 0 2px 4px rgba(0, 0, 0, 0.2);
+            --shadow-text-strong: 0 4px 15px rgba(0, 0, 0, 0.4);
+            --shadow-metric: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-metric-label: 0 2px 6px rgba(0, 0, 0, 0.3);
+            --transition: all 0.3s ease;
+            --color-dark-text: #2c3e50;
+            --color-darker-text: #34495e;
+            --color-light-text: #e0e6ff;
+        }
+        
         /* Main application background with gradient */
         html, body, .stApp {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--gradient-primary);
             font-family: 'Inter', sans-serif;
             height: 100vh;
             margin: 0;
@@ -23,42 +58,42 @@ def apply_custom_css():
         /* Main content container with glass morphism effect */
         .block-container {
             padding: 2rem 2rem 3rem 2rem;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
+            background: var(--glass-bg-05);
+            backdrop-filter: var(--blur-20);
+            border-radius: var(--radius-20);
             margin: 1rem;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
         /* Sidebar styling with enhanced transparency and blur effects */
         section[data-testid="stSidebar"] {
-            background: linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: #2c3e50;
-            border-top-right-radius: 25px;
-            border-bottom-right-radius: 25px;
+            background: var(--gradient-sidebar);
+            backdrop-filter: var(--blur-20);
+            border: 1px solid var(--glass-border-3);
+            color: var(--color-dark-text);
+            border-top-right-radius: var(--radius-25);
+            border-bottom-right-radius: var(--radius-25);
             padding: 25px;
             box-shadow: 4px 0 20px rgba(102, 126, 234, 0.15);
         }
 
         /* Sidebar text styling for better readability */
         section[data-testid="stSidebar"] .stMarkdown {
-            color: #2c3e50;
+            color: var(--color-dark-text);
         }
         
         section[data-testid="stSidebar"] h2 {
-            color: #2c3e50 !important;
+            color: var(--color-dark-text) !important;
             font-weight: 700;
         }
         
         section[data-testid="stSidebar"] h3 {
-            color: #34495e !important;
+            color: var(--color-darker-text) !important;
             font-weight: 600;
         }
         
         section[data-testid="stSidebar"] p {
-            color: #34495e !important;
+            color: var(--color-darker-text) !important;
         }
 
         /* Main heading styling with text shadow effects */
@@ -68,7 +103,7 @@ def apply_custom_css():
             font-weight: 700;
             text-align: center;
             margin: 1rem 0 2rem 0;
-            text-shadow: 0 4px 15px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+            text-shadow: var(--shadow-text-strong), 0 2px 8px rgba(0, 0, 0, 0.3);
             filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.3));
         }
 
@@ -78,11 +113,11 @@ def apply_custom_css():
             font-size: 1.8rem;
             font-weight: 600;
             margin-bottom: 1.5rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            text-shadow: var(--shadow-text);
         }
 
         h3 {
-            color: #e0e6ff;
+            color: var(--color-light-text);
             font-size: 1.2rem;
             font-weight: 500;
             margin-bottom: 1rem;
@@ -90,51 +125,41 @@ def apply_custom_css():
 
         /* Interactive button styling with hover effects */
         div.stButton > button {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: var(--gradient-button);
             color: white;
             font-weight: 600;
-            border-radius: 15px;
+            border-radius: var(--radius-15);
             border: none;
             padding: 12px 30px;
             margin-top: 20px;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: var(--transition);
+            box-shadow: var(--shadow-button);
             font-size: 1rem;
         }
 
         div.stButton > button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
-            background: linear-gradient(45deg, #764ba2, #667eea);
+            box-shadow: var(--shadow-button-hover);
+            background: var(--gradient-button-hover);
         }
 
         /* Form elements styling (sliders, multiselect) */
-        .stSlider > div {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            color: #2c3e50;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
+        .stSlider > div,
         .stMultiSelect > div {
-            background: rgba(255, 255, 255, 0.6);
-            backdrop-filter: blur(10px);
+            background: var(--glass-bg-6);
+            backdrop-filter: var(--blur-10);
             padding: 20px;
-            border-radius: 15px;
+            border-radius: var(--radius-15);
             margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            color: #2c3e50;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--glass-border-6);
+            color: var(--color-dark-text);
+            box-shadow: var(--shadow-form);
         }
         
         /* Enhanced label styling for form elements */
         section[data-testid="stSidebar"] .stSlider label,
         section[data-testid="stSidebar"] .stMultiSelect label {
-            color: #2c3e50 !important;
+            color: var(--color-dark-text) !important;
             font-weight: 900 !important;
             font-size: 1.5rem !important;
             margin-bottom: 12px !important;
@@ -147,15 +172,15 @@ def apply_custom_css():
         
         /* Enhanced sidebar button styling */
         section[data-testid="stSidebar"] div.stButton > button {
-            background: linear-gradient(45deg, #667eea, #764ba2) !important;
+            background: var(--gradient-button) !important;
             color: white !important;
             font-weight: 700 !important;
-            border-radius: 15px !important;
+            border-radius: var(--radius-15) !important;
             border: none !important;
             padding: 15px 25px !important;
             margin-top: 100px !important;
-            transition: all 0.3s ease !important;
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4) !important;
+            transition: var(--transition) !important;
+            box-shadow: var(--shadow-sidebar-button) !important;
             font-size: 1.1rem !important;
             width: 100% !important;
             cursor: pointer !important;
@@ -163,16 +188,16 @@ def apply_custom_css():
 
         section[data-testid="stSidebar"] div.stButton > button:hover {
             transform: translateY(-3px) !important;
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6) !important;
-            background: linear-gradient(45deg, #764ba2, #667eea) !important;
+            box-shadow: var(--shadow-sidebar-button-hover) !important;
+            background: var(--gradient-button-hover) !important;
         }
 
         /* Expandable sections styling */
         .stExpander {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border-radius: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: var(--glass-bg-1);
+            backdrop-filter: var(--blur-15);
+            border-radius: var(--radius-15);
+            border: 1px solid var(--glass-border-2);
             margin: 1rem 0;
         }
 
@@ -192,14 +217,14 @@ def apply_custom_css():
 
         /* Metric cards styling with hover effects */
         .metric-container {
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(15px);
-            border-radius: 15px;
+            background: var(--glass-bg-2);
+            backdrop-filter: var(--blur-15);
+            border-radius: var(--radius-15);
             padding: 20px;
             margin: 10px 0;
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            border: 1px solid var(--glass-border-4);
             text-align: center;
-            transition: all 0.3s ease;
+            transition: var(--transition);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
@@ -207,14 +232,11 @@ def apply_custom_css():
             transform: translateY(-3px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
             border: 1px solid rgba(102, 126, 234, 0.6);
-            background: rgba(255, 255, 255, 0.25);
+            background: var(--glass-bg-25);
         }
 
         /* Map popup removal */
-        .folium-map .leaflet-popup-pane {
-            display: none !important;
-        }
-        
+        .folium-map .leaflet-popup-pane,
         .folium-map .leaflet-popup {
             display: none !important;
         }
@@ -230,24 +252,24 @@ def apply_custom_css():
             font-weight: 700;
             color: white;
             margin-bottom: 5px;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            text-shadow: var(--shadow-metric);
         }
 
         .metric-label {
             font-size: 1rem;
             color: white;
             font-weight: 600;
-            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            text-shadow: var(--shadow-metric-label);
         }
 
         /* Map container styling */
         .map-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(15px);
-            border-radius: 20px;
+            background: var(--glass-bg-1);
+            backdrop-filter: var(--blur-15);
+            border-radius: var(--radius-20);
             padding: 20px;
             margin: 20px 0;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--glass-border-2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             width: 100%;
             overflow: hidden;
@@ -256,19 +278,19 @@ def apply_custom_css():
         iframe[title="streamlit_folium.st_folium"] {
             width: 100% !important;
             height: 600px !important;
-            border-radius: 15px;
+            border-radius: var(--radius-15);
         }
         
         /* Information cards styling */
         .info-card {
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
-            backdrop-filter: blur(15px);
-            border-radius: 15px;
+            background: linear-gradient(135deg, var(--glass-bg-1), var(--glass-bg-05));
+            backdrop-filter: var(--blur-15);
+            border-radius: var(--radius-15);
             padding: 25px;
             margin: 15px 0;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            border: 1px solid var(--glass-border-2);
             color: white;
-            transition: all 0.3s ease;
+            transition: var(--transition);
         }
         
         .info-card:hover {
@@ -279,7 +301,7 @@ def apply_custom_css():
 
         /* Selected tags/chips styling in multiselect */
         section[data-testid="stSidebar"] .stMultiSelect div[data-baseweb="tag"] {
-            background: linear-gradient(45deg, #667eea, #764ba2) !important;
+            background: var(--gradient-button) !important;
             color: white !important;
             border: none !important;
             border-radius: 8px !important;

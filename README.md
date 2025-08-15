@@ -1,8 +1,8 @@
-# 🏠 Madrid Property Price Prediction System
+# Madrid Property Price Prediction System
 
 A machine learning system for predicting rental prices in Madrid using Random Forest algorithm, selected after comprehensive model comparison for its superior performance.
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Features](#features)
@@ -14,9 +14,9 @@ A machine learning system for predicting rental prices in Madrid using Random Fo
 - [Results](#results)
 - [License](#license)
 
-## 🎯 Overview
+## Overview
 
-End-to-end ML solution for Madrid rental price prediction combining data analysis, model evaluation, and interactive visualization.
+End-to-end machine learning solution for Madrid rental price prediction combining data analysis, model evaluation, and interactive visualization.
 
 **Key Features:**
 - Multi-model evaluation and comparison
@@ -25,51 +25,51 @@ End-to-end ML solution for Madrid rental price prediction combining data analysi
 - Real-time price predictions
 - Market insights and analytics
 
-## ✨ Features
+## Features
 
-- **🤖 ML Models**: Random Forest, Linear Regression, XGBoost, LightGBM comparison
-- **📊 Dashboard**: Interactive price predictions with property filters
-- **🗺️ Maps**: District-based visualization and selection
-- **📈 Analytics**: Market insights and model performance metrics
+- **Machine Learning Models**: Random Forest, Linear Regression, XGBoost, LightGBM comparison
+- **Interactive Dashboard**: Real-time price predictions with property filters
+- **Geographic Visualization**: District-based maps and property selection
+- **Market Analytics**: Comprehensive insights and model performance metrics
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 - **Backend**: Python, Pandas, NumPy, Scikit-learn
 - **Frontend**: Streamlit, Plotly, Folium
-- **ML**: Random Forest Regression (final model)
+- **Machine Learning**: Random Forest Regression (final model)
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 Rental-Price-Recommendation-System-in-Madrid-using-Machine-Learning/
 │
-├── 📁 data/                           
+├── data/                           
 │   ├── data_clean.csv               
 │   └── madrid-districts.geojson     
 │
-├── 📁 models/                        
+├── models/                        
 │   ├── random_forest_model.pkl      
 │   ├── model_features.pkl            
 │   ├── model_info.pkl               
 │   └── district_mapping.pkl          
 │
-├── 📁 notebooks/                     
+├── notebooks/                     
 │   ├── 01_EDA.ipynb                 
 │   ├── 02_Linear_Regression.ipynb    
 │   ├── 03_Random_Forest.ipynb       
 │   └── 04_XGBoost_LightGBM.ipynb     
 │
-├── 📁 dashboard/                     
+├── dashboard/                     
 │   ├── main.py                       
-│   ├── 📁 components/               
-│   ├── 📁 utils/                     
-│   └── 📁 config/                    
+│   ├── components/               
+│   ├── utils/                     
+│   └── config/                    
 │
-├── 📄 requirements.txt               
-└── 📄 README.md                      
+├── requirements.txt               
+└── README.md                      
 ```
 
-## 🚀 Installation
+## Installation
 
 ```bash
 # Clone repository
@@ -85,7 +85,7 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 ```
 
-## 🎮 Usage
+## Usage
 
 ### Launch Dashboard
 ```bash
@@ -103,7 +103,7 @@ jupyter notebook notebooks/03_Random_Forest.ipynb       # Selected model
 jupyter notebook notebooks/04_XGBoost_LightGBM.ipynb    # Advanced models
 ```
 
-## 🔍 Model Selection
+## Model Selection
 
 ### Performance Comparison
 
@@ -114,21 +114,40 @@ jupyter notebook notebooks/04_XGBoost_LightGBM.ipynb    # Advanced models
 | XGBoost | €102,980 | 0.8918 | €62,270 |
 | LightGBM | €87,227 | 0.9224 | €51,280 |
 
-### Why Random Forest?
-- ✅ **Highest accuracy**: 92.51% (R² Score)
-- ✅ **Lowest error**: €85,674 RMSE
-- ✅ **Best MAE**: €47,701 mean absolute error
-- ✅ **Robust performance**: Stable across property types
-- ✅ **Feature interpretability**: Clear importance rankings
+### Selection Rationale
+- **Highest accuracy**: 92.51% prediction accuracy (R² Score)
+- **Lowest error rates**: €85,674 RMSE and €47,701 MAE
+- **Robust performance**: Consistent results across property types
+- **Feature interpretability**: Clear importance rankings for business insights
 
-## 📝 License
+## Results
+
+### Model Performance
+- **Prediction Accuracy**: 92.51% (R² Score)
+- **Root Mean Square Error**: €85,674
+- **Mean Absolute Error**: €47,701
+- **Feature Count**: 20+ property characteristics
+- **Validation Method**: 5-fold cross-validation
+
+### Feature Importance Rankings
+1. **Property Area** (34%)
+2. **District Location** (28%) 
+3. **Number of Rooms** (15%)
+4. **Number of Bathrooms** (12%)
+5. **Floor Level** (7%)
+6. **Amenities** (4%)
+
+### Business Applications
+- Accurate price predictions for property valuation
+- Real-time estimation for investment decisions
+- Market analysis for real estate professionals
+- Data-driven pricing strategies for property owners
+
+## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-<div align="center">
-
-🏠 Accurate • 📊 Interactive • 🤖 AI
 
 
